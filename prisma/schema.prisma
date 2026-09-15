@@ -1,0 +1,352 @@
+// ZenMind — Schema Prisma
+// Refleja el diseño de base de datos PostgreSQL compartido por las apps Flutter y Kotlin.
+// Se usan @map / @@map para conservar exactamente los nombres snake_case del diseño.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// 1. Usuarios e instituciones
+// ---------------------------------------------------------------------------
+
+enum TipoInstitucion {
+  universidad
+  empresa
+  gobierno
+
+  @@map("tipo_institucion")
+}
+
+model Institucion {
+  id        BigInt          @id @default(autoincrement())
+  nombre    String
+  tipo      TipoInstitucion
+  creadoEn  DateTime        @default(now()) @map("creado_en") @db.Timestamptz(6)
+
+  departamentos Departamento[]
+  usuarios      Usuario[]
+
+  @@map("instituciones")
+}
+
+model Departamento {
+  id            BigInt @id @default(autoincrement())
+  institucionId BigInt @map("institucion_id")
+  nombre        String
+
+  institucion Institucion @relation(fields: [institucionId], references: [id], onDelete: Cascade)
+  usuarios    Usuario[]
+
+  @@map("departamentos")
+}
+
+model Usuario {
+  id                   BigInt    @id @default(autoincrement())
+  email                String    @unique
+  passwordHash         String    @map("password_hash")
+  nombreVisible        String    @map("nombre_visible")
+  fotoPerfilUrl        String?   @map("foto_perfil_url")
+  institucionId        BigInt?   @map("institucion_id")
+  departamentoId       BigInt?   @map("departamento_id")
+  consentimientoDatos  Boolean   @default(false) @map("consentimiento_datos")
+  idiomaPreferido      String    @default("es") @map("idioma_preferido")
+  modoDaltonismoActivo Boolean   @default(false) @map("modo_daltonismo_activo")
+  creadoEn             DateTime  @default(now()) @map("creado_en") @db.Timestamptz(6)
+  eliminadoEn          DateTime? @map("eliminado_en") @db.Timestamptz(6)
+
+  institucion  Institucion?  @relation(fields: [institucionId], references: [id])
+  departamento Departamento? @relation(fields: [departamentoId], references: [id])
+
+  racha                 Racha?
+  chequeosAnimo         ChequeoAnimo[]
+  contactosPersonales   ContactoPersonal[]
+  eventosPanico         EventoPanico[]
+  respiracionSesiones   RespiracionSesion[]
+  protocolos            Protocolo[]
+  protocoloVistas       ProtocoloVista[]
+  flashcardVistas       FlashcardVista[]
+  juegosSesiones        JuegoSesion[]
+  audioReproducciones   AudioReproduccion[]
+  eventosTelemetria     EventoTelemetriaApp[]
+
+  @@map("usuarios")
+}
+
+model Racha {
+  usuarioId          BigInt   @id @map("usuario_id")
+  rachaActualDias    Int      @default(0) @map("racha_actual_dias")
+  rachaMasLargaDias  Int      @default(0) @map("racha_mas_larga_dias")
+  fechaUltimoCheckin DateTime? @map("fecha_ultimo_checkin") @db.Date
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@map("rachas")
+}
+
+// ---------------------------------------------------------------------------
+// 2. Check-in diario
+// ---------------------------------------------------------------------------
+
+model EstadoAnimo {
+  id       BigInt  @id @default(autoincrement())
+  nombre   String
+  iconoUrl String? @map("icono_url")
+  orden    Int     @default(0) @db.SmallInt
+
+  chequeos ChequeoAnimo[]
+
+  @@map("estados_animo")
+}
+
+model ChequeoAnimo {
+  id            BigInt   @id @default(autoincrement())
+  usuarioId     BigInt   @map("usuario_id")
+  estadoAnimoId BigInt   @map("estado_animo_id")
+  comentario    String?
+  registradoEn  DateTime @default(now()) @map("registrado_en") @db.Timestamptz(6)
+
+  usuario     Usuario     @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  estadoAnimo EstadoAnimo @relation(fields: [estadoAnimoId], references: [id])
+
+  @@map("chequeos_animo")
+}
+
+// ---------------------------------------------------------------------------
+// 3. Botón de Pánico
+// ---------------------------------------------------------------------------
+
+model ContactoPersonal {
+  id               BigInt  @id @default(autoincrement())
+  usuarioId        BigInt  @map("usuario_id")
+  nombre           String
+  telefono         String
+  relacion         String?
+  esContactoPanico Boolean @default(false) @map("es_contacto_panico")
+
+  usuario       Usuario        @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  eventosPanico EventoPanico[]
+
+  @@map("contactos_personales")
+}
+
+model EventoPanico {
+  id                BigInt    @id @default(autoincrement())
+  usuarioId         BigInt    @map("usuario_id")
+  contactoId        BigInt?   @map("contacto_id")
+  activadoEn        DateTime  @default(now()) @map("activado_en") @db.Timestamptz(6)
+  conectadoEn       DateTime? @map("conectado_en") @db.Timestamptz(6)
+  // tiempo_respuesta_ms es una columna GENERATED en la BD (ver migración SQL).
+  // Prisma no la escribe; se lee mediante consultas o se ignora aquí.
+
+  usuario  Usuario           @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  contacto ContactoPersonal? @relation(fields: [contactoId], references: [id])
+
+  @@map("eventos_panico")
+}
+
+// ---------------------------------------------------------------------------
+// 4. Respira
+// ---------------------------------------------------------------------------
+
+model EjercicioRespiracion {
+  id               BigInt  @id @default(autoincrement())
+  titulo           String
+  descripcion      String?
+  duracionSegundos Int     @map("duracion_segundos")
+  patron           Json    @db.JsonB
+  vibra            Boolean @default(true)
+
+  sesiones RespiracionSesion[]
+
+  @@map("ejercicios_respiracion")
+}
+
+model RespiracionSesion {
+  id           BigInt    @id @default(autoincrement())
+  usuarioId    BigInt    @map("usuario_id")
+  ejercicioId  BigInt    @map("ejercicio_id")
+  iniciadaEn   DateTime  @default(now()) @map("iniciada_en") @db.Timestamptz(6)
+  completadaEn DateTime? @map("completada_en") @db.Timestamptz(6)
+
+  usuario   Usuario              @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  ejercicio EjercicioRespiracion @relation(fields: [ejercicioId], references: [id])
+
+  @@map("respiracion_sesiones")
+}
+
+// ---------------------------------------------------------------------------
+// 5. Apoyo
+// ---------------------------------------------------------------------------
+
+model LineaEmergencia {
+  id          BigInt  @id @default(autoincrement())
+  nombre      String
+  telefono    String
+  pais        String?
+  descripcion String?
+
+  @@map("lineas_emergencia")
+}
+
+// ---------------------------------------------------------------------------
+// 6. Protocolos
+// ---------------------------------------------------------------------------
+
+model Protocolo {
+  id            BigInt  @id @default(autoincrement())
+  usuarioId     BigInt? @map("usuario_id")
+  titulo        String
+  esPredefinido Boolean @default(false) @map("es_predefinido")
+
+  usuario Usuario?         @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  pasos   PasoProtocolo[]
+  vistas  ProtocoloVista[]
+
+  @@map("protocolos")
+}
+
+model PasoProtocolo {
+  id          BigInt @id @default(autoincrement())
+  protocoloId BigInt @map("protocolo_id")
+  ordenPaso   Int    @map("orden_paso") @db.SmallInt
+  descripcion String
+
+  protocolo Protocolo @relation(fields: [protocoloId], references: [id], onDelete: Cascade)
+
+  @@map("pasos_protocolo")
+}
+
+model ProtocoloVista {
+  id          BigInt   @id @default(autoincrement())
+  usuarioId   BigInt   @map("usuario_id")
+  protocoloId BigInt   @map("protocolo_id")
+  vistoEn     DateTime @default(now()) @map("visto_en") @db.Timestamptz(6)
+
+  usuario   Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  protocolo Protocolo @relation(fields: [protocoloId], references: [id])
+
+  @@map("protocolo_vistas")
+}
+
+// ---------------------------------------------------------------------------
+// 7. Flashcards
+// ---------------------------------------------------------------------------
+
+model Flashcard {
+  id        BigInt @id @default(autoincrement())
+  categoria String
+  titulo    String
+  contenido String
+
+  vistas FlashcardVista[]
+
+  @@map("flashcards")
+}
+
+model FlashcardVista {
+  id          BigInt   @id @default(autoincrement())
+  usuarioId   BigInt   @map("usuario_id")
+  flashcardId BigInt   @map("flashcard_id")
+  vistoEn     DateTime @default(now()) @map("visto_en") @db.Timestamptz(6)
+
+  usuario   Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  flashcard Flashcard @relation(fields: [flashcardId], references: [id])
+
+  @@map("flashcard_vistas")
+}
+
+// ---------------------------------------------------------------------------
+// 8. Juegos
+// ---------------------------------------------------------------------------
+
+model Juego {
+  id          BigInt  @id @default(autoincrement())
+  nombre      String
+  tipo        String?
+  descripcion String?
+
+  sesiones JuegoSesion[]
+
+  @@map("juegos")
+}
+
+model JuegoSesion {
+  id            BigInt    @id @default(autoincrement())
+  usuarioId     BigInt    @map("usuario_id")
+  juegoId       BigInt    @map("juego_id")
+  iniciadaEn    DateTime  @default(now()) @map("iniciada_en") @db.Timestamptz(6)
+  finalizadaEn  DateTime? @map("finalizada_en") @db.Timestamptz(6)
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  juego   Juego   @relation(fields: [juegoId], references: [id])
+
+  @@map("juegos_sesiones")
+}
+
+// ---------------------------------------------------------------------------
+// 9. Audios
+// ---------------------------------------------------------------------------
+
+model Audio {
+  id               BigInt @id @default(autoincrement())
+  titulo           String
+  url              String
+  duracionSegundos Int?   @map("duracion_segundos")
+
+  reproducciones AudioReproduccion[]
+
+  @@map("audios")
+}
+
+model AudioReproduccion {
+  id                        BigInt   @id @default(autoincrement())
+  usuarioId                 BigInt   @map("usuario_id")
+  audioId                   BigInt?  @map("audio_id")
+  tituloLocal               String?  @map("titulo_local")
+  iniciadaEn                DateTime @default(now()) @map("iniciada_en") @db.Timestamptz(6)
+  duracionEscuchadaSegundos Int?     @map("duracion_escuchada_segundos")
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  audio   Audio?  @relation(fields: [audioId], references: [id])
+
+  @@map("audio_reproducciones")
+}
+
+// ---------------------------------------------------------------------------
+// 11. Analítica institucional (telemetría)
+// ---------------------------------------------------------------------------
+
+enum PlataformaApp {
+  android_kotlin
+  flutter
+
+  @@map("plataforma_app")
+}
+
+enum TipoEventoTelemetria {
+  vista_pantalla
+  crash
+  uso_funcionalidad
+
+  @@map("tipo_evento_telemetria")
+}
+
+model EventoTelemetriaApp {
+  id             BigInt               @id @default(autoincrement())
+  usuarioId      BigInt?              @map("usuario_id")
+  plataforma     PlataformaApp
+  tipoEvento     TipoEventoTelemetria @map("tipo_evento")
+  nombrePantalla String?              @map("nombre_pantalla")
+  metadata       Json?                @db.JsonB
+  ocurridoEn     DateTime             @default(now()) @map("ocurrido_en") @db.Timestamptz(6)
+
+  usuario Usuario? @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+
+  @@map("eventos_telemetria_app")
+}

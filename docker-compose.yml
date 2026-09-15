@@ -1,0 +1,43 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: zenmind-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: zenmind
+      POSTGRES_PASSWORD: zenmind
+      POSTGRES_DB: zenmind
+    ports:
+      - '5432:5432'
+    volumes:
+      - zenmind_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U zenmind -d zenmind']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: zenmind-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://zenmind:zenmind@db:5432/zenmind?schema=public
+      PORT: 3000
+      API_PREFIX: api
+      JWT_ACCESS_SECRET: dev-access-secret-change-me
+      JWT_ACCESS_EXPIRES_IN: 15m
+      JWT_REFRESH_SECRET: dev-refresh-secret-change-me
+      JWT_REFRESH_EXPIRES_IN: 30d
+      NODE_ENV: development
+    ports:
+      - '3000:3000'
+    command: sh -c "npx prisma migrate deploy && npm run db:seed && node dist/main"
+
+volumes:
+  zenmind_pgdata:
