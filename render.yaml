@@ -1,0 +1,64 @@
+# Render Blueprint para el backend de ZenMind (NestJS + Prisma + PostgreSQL)
+# Despliega, gratis, un servicio web (Docker) + una base de datos PostgreSQL.
+#
+# Cómo usarlo:
+#   1. Sube este archivo al repo (raíz).
+#   2. En Render: New > Blueprint, elige este repositorio.
+#   3. Render leerá este archivo y creará ambos recursos.
+#
+# Limitaciones del plan free:
+#   - El servicio web se duerme tras ~15 min de inactividad (primer request lento).
+#   - La base de datos PostgreSQL gratis expira a los ~30 días (hay que recrearla).
+
+databases:
+  - name: zenmind-db
+    databaseName: zenmind
+    user: zenmind
+    plan: free
+    postgresMajorVersion: "16"
+    # Lista vacía = solo accesible desde dentro de Render (más seguro).
+    ipAllowList: []
+
+services:
+  - type: web
+    name: zenmind-api
+    runtime: docker
+    plan: free
+    region: oregon
+    branch: main
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    autoDeploy: true
+    # NestJS expone /api/v1/health como healthcheck público.
+    healthCheckPath: /api/v1/health
+    envVars:
+      # Cadena de conexión inyectada automáticamente desde la base de datos.
+      - key: DATABASE_URL
+        fromDatabase:
+          name: zenmind-db
+          property: connectionString
+
+      # Render asigna el puerto vía $PORT; main.ts ya lo lee de PORT.
+      - key: PORT
+        value: "10000"
+
+      - key: API_PREFIX
+        value: api
+
+      - key: NODE_ENV
+        value: production
+
+      # Secretos JWT generados por Render (aleatorios y seguros).
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_ACCESS_EXPIRES_IN
+        value: 15m
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: 30d
+
+      # Client IDs de Google Sign-In. Se rellenan en el dashboard de Render.
+      # (Déjalo vacío si aún no usas Google Sign-In.)
+      - key: GOOGLE_CLIENT_IDS
+        sync: false

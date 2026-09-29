@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { HealthController } from './health.controller';
 import { PrismaModule } from './prisma/prisma.module';
 import { CommonModule } from './common/common.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -40,5 +41,6 @@ import { InstitucionesModule } from './modules/instituciones/instituciones.modul
     TelemetriaModule,
     InstitucionesModule,
   ],
+  controllers: [HealthController],
 })
 export class AppModule {}
