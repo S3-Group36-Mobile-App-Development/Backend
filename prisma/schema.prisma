@@ -3,7 +3,10 @@
 // Se usan @map / @@map para conservar exactamente los nombres snake_case del diseño.
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  // "native" para desarrollo local (macOS) y el target de Debian para la
+  // imagen de producción (node:20-slim usa OpenSSL 3.0).
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
 datasource db {
