@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from './prisma/prisma.module';
 import { CommonModule } from './common/common.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { UsersModule } from './modules/users/users.module';
 import { UsuariosModule } from './modules/usuarios/usuarios.module';
 import { CheckinModule } from './modules/checkin/checkin.module';
 import { PanicoModule } from './modules/panico/panico.module';
@@ -25,6 +26,7 @@ import { InstitucionesModule } from './modules/instituciones/instituciones.modul
     PrismaModule,
     CommonModule,
     AuthModule,
+    UsersModule,
     UsuariosModule,
     CheckinModule,
     PanicoModule,

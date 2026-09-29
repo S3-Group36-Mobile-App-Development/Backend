@@ -49,7 +49,6 @@ model Departamento {
 model Usuario {
   id                   BigInt    @id @default(autoincrement())
   email                String    @unique
-  passwordHash         String    @map("password_hash")
   nombreVisible        String    @map("nombre_visible")
   fotoPerfilUrl        String?   @map("foto_perfil_url")
   institucionId        BigInt?   @map("institucion_id")
@@ -62,6 +61,9 @@ model Usuario {
 
   institucion  Institucion?  @relation(fields: [institucionId], references: [id])
   departamento Departamento? @relation(fields: [departamentoId], references: [id])
+
+  // Métodos de autenticación (local, google, ...). Un usuario puede tener varios.
+  autenticaciones       UsuarioAuth[]
 
   racha                 Racha?
   chequeosAnimo         ChequeoAnimo[]
@@ -76,6 +78,36 @@ model Usuario {
   eventosTelemetria     EventoTelemetriaApp[]
 
   @@map("usuarios")
+}
+
+// Proveedores de autenticación soportados.
+enum AuthProvider {
+  LOCAL
+  GOOGLE
+
+  @@map("auth_provider")
+}
+
+// Métodos de autenticación de un usuario. Separa las credenciales de los datos
+// de perfil para permitir login local, Google Sign-In, etc. sobre el mismo User.
+model UsuarioAuth {
+  id             BigInt       @id @default(autoincrement())
+  usuarioId      BigInt       @map("usuario_id")
+  provider       AuthProvider
+  // Identificador estable del proveedor externo (p. ej. el "sub" de Google).
+  // Para LOCAL puede ser NULL.
+  providerUserId String?      @map("provider_user_id")
+  // Hash Argon2 de la contraseña. Solo aplica a LOCAL; NULL para proveedores externos.
+  passwordHash   String?      @map("password_hash")
+  creadoEn       DateTime     @default(now()) @map("creado_en") @db.Timestamptz(6)
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  // Evita autenticaciones duplicadas para un mismo proveedor+identificador externo.
+  @@unique([provider, providerUserId])
+  // Un usuario no puede tener dos métodos del mismo proveedor.
+  @@unique([usuarioId, provider])
+  @@map("usuarios_auth")
 }
 
 model Racha {
