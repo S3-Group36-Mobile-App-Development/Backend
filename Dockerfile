@@ -30,7 +30,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends openssl \
 # (migrate deploy) y ts-node (para ejecutar el seed).
 COPY package*.json ./
 COPY prisma ./prisma
-RUN npm ci
+RUN npm ci --include=dev
+COPY tsconfig.json ./
 
 # Genera el cliente Prisma en esta etapa (incluye el engine de
 # debian-openssl-3.0.x declarado en schema.prisma).
