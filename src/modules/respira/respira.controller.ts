@@ -9,7 +9,10 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { RespiraService } from './respira.service';
-import { IniciarSesionDto } from './dto/sesion-respiracion.dto';
+import {
+  IniciarSesionDto,
+  CompletarSesionDto,
+} from './dto/sesion-respiracion.dto';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 
@@ -48,8 +51,9 @@ export class RespiraController {
   completarSesion(
     @CurrentUser('usuarioId') usuarioId: bigint,
     @Param('id', ParseIntPipe) id: number,
+    @Body() dto: CompletarSesionDto,
   ) {
-    return this.respiraService.completarSesion(usuarioId, BigInt(id));
+    return this.respiraService.completarSesion(usuarioId, BigInt(id), dto);
   }
 
   @ApiBearerAuth()

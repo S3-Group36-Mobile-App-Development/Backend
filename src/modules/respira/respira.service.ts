@@ -1,7 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ConsentimientoService } from '../../common/services/consentimiento.service';
-import { IniciarSesionDto } from './dto/sesion-respiracion.dto';
+import {
+  IniciarSesionDto,
+  CompletarSesionDto,
+} from './dto/sesion-respiracion.dto';
 
 @Injectable()
 export class RespiraService {
@@ -35,8 +38,12 @@ export class RespiraService {
     });
   }
 
-  /** Marca una sesión como completada. */
-  async completarSesion(usuarioId: bigint, sesionId: bigint) {
+  /** Marca una sesión como completada y guarda mood final + pausas. */
+  async completarSesion(
+    usuarioId: bigint,
+    sesionId: bigint,
+    dto: CompletarSesionDto,
+  ) {
     const sesion = await this.prisma.respiracionSesion.findFirst({
       where: { id: sesionId, usuarioId },
     });
@@ -46,7 +53,11 @@ export class RespiraService {
 
     return this.prisma.respiracionSesion.update({
       where: { id: sesionId },
-      data: { completadaEn: new Date() },
+      data: {
+        completadaEn: new Date(),
+        finalEmotion: dto.finalEmotion,
+        numberMovementPauses: dto.numberMovementPauses,
+      },
     });
   }
 

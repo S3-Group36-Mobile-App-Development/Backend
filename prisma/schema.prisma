@@ -203,11 +203,13 @@ model EjercicioRespiracion {
 }
 
 model RespiracionSesion {
-  id           BigInt    @id @default(autoincrement())
-  usuarioId    BigInt    @map("usuario_id")
-  ejercicioId  BigInt    @map("ejercicio_id")
-  iniciadaEn   DateTime  @default(now()) @map("iniciada_en") @db.Timestamptz(6)
-  completadaEn DateTime? @map("completada_en") @db.Timestamptz(6)
+  id                   BigInt    @id @default(autoincrement())
+  usuarioId            BigInt    @map("usuario_id")
+  ejercicioId          BigInt    @map("ejercicio_id")
+  iniciadaEn           DateTime  @default(now()) @map("iniciada_en") @db.Timestamptz(6)
+  completadaEn         DateTime? @map("completada_en") @db.Timestamptz(6)
+  finalEmotion         Int?      @map("final_emotion")
+  numberMovementPauses Int?      @map("number_movement_pauses")
 
   usuario   Usuario              @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
   ejercicio EjercicioRespiracion @relation(fields: [ejercicioId], references: [id])
