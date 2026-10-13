@@ -208,6 +208,7 @@ model RespiracionSesion {
   ejercicioId          BigInt    @map("ejercicio_id")
   iniciadaEn           DateTime  @default(now()) @map("iniciada_en") @db.Timestamptz(6)
   completadaEn         DateTime? @map("completada_en") @db.Timestamptz(6)
+  initialEmotion       Int?      @map("initial_emotion")
   finalEmotion         Int?      @map("final_emotion")
   numberMovementPauses Int?      @map("number_movement_pauses")
 

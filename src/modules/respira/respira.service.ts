@@ -34,7 +34,11 @@ export class RespiraService {
     }
 
     return this.prisma.respiracionSesion.create({
-      data: { usuarioId, ejercicioId: BigInt(dto.ejercicioId) },
+      data: {
+        usuarioId,
+        ejercicioId: BigInt(dto.ejercicioId),
+        initialEmotion: dto.initialEmotion,
+      },
     });
   }
 
