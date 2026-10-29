@@ -27,10 +27,10 @@ enum TipoInstitucion {
 }
 
 model Institucion {
-  id        BigInt          @id @default(autoincrement())
-  nombre    String
-  tipo      TipoInstitucion
-  creadoEn  DateTime        @default(now()) @map("creado_en") @db.Timestamptz(6)
+  id       BigInt          @id @default(autoincrement())
+  nombre   String
+  tipo     TipoInstitucion
+  creadoEn DateTime        @default(now()) @map("creado_en") @db.Timestamptz(6)
 
   departamentos Departamento[]
   usuarios      Usuario[]
@@ -66,19 +66,19 @@ model Usuario {
   departamento Departamento? @relation(fields: [departamentoId], references: [id])
 
   // Métodos de autenticación (local, google, ...). Un usuario puede tener varios.
-  autenticaciones       UsuarioAuth[]
+  autenticaciones UsuarioAuth[]
 
-  racha                 Racha?
-  chequeosAnimo         ChequeoAnimo[]
-  contactosPersonales   ContactoPersonal[]
-  eventosPanico         EventoPanico[]
-  respiracionSesiones   RespiracionSesion[]
-  protocolos            Protocolo[]
-  protocoloVistas       ProtocoloVista[]
-  flashcardVistas       FlashcardVista[]
-  juegosSesiones        JuegoSesion[]
-  audioReproducciones   AudioReproduccion[]
-  eventosTelemetria     EventoTelemetriaApp[]
+  racha               Racha?
+  chequeosAnimo       ChequeoAnimo[]
+  contactosPersonales ContactoPersonal[]
+  eventosPanico       EventoPanico[]
+  respiracionSesiones RespiracionSesion[]
+  protocolos          Protocolo[]
+  protocoloVistas     ProtocoloVista[]
+  flashcardVistas     FlashcardVista[]
+  juegosSesiones      JuegoSesion[]
+  audioReproducciones AudioReproduccion[]
+  eventosTelemetria   EventoTelemetriaApp[]
 
   @@map("usuarios")
 }
@@ -114,9 +114,9 @@ model UsuarioAuth {
 }
 
 model Racha {
-  usuarioId          BigInt   @id @map("usuario_id")
-  rachaActualDias    Int      @default(0) @map("racha_actual_dias")
-  rachaMasLargaDias  Int      @default(0) @map("racha_mas_larga_dias")
+  usuarioId          BigInt    @id @map("usuario_id")
+  rachaActualDias    Int       @default(0) @map("racha_actual_dias")
+  rachaMasLargaDias  Int       @default(0) @map("racha_mas_larga_dias")
   fechaUltimoCheckin DateTime? @map("fecha_ultimo_checkin") @db.Date
 
   usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
@@ -171,11 +171,11 @@ model ContactoPersonal {
 }
 
 model EventoPanico {
-  id                BigInt    @id @default(autoincrement())
-  usuarioId         BigInt    @map("usuario_id")
-  contactoId        BigInt?   @map("contacto_id")
-  activadoEn        DateTime  @default(now()) @map("activado_en") @db.Timestamptz(6)
-  conectadoEn       DateTime? @map("conectado_en") @db.Timestamptz(6)
+  id          BigInt    @id @default(autoincrement())
+  usuarioId   BigInt    @map("usuario_id")
+  contactoId  BigInt?   @map("contacto_id")
+  activadoEn  DateTime  @default(now()) @map("activado_en") @db.Timestamptz(6)
+  conectadoEn DateTime? @map("conectado_en") @db.Timestamptz(6)
   // tiempo_respuesta_ms es una columna GENERATED en la BD (ver migración SQL).
   // Prisma no la escribe; se lee mediante consultas o se ignora aquí.
 
@@ -309,20 +309,23 @@ model Juego {
   tipo        String?
   descripcion String?
 
-  sesiones JuegoSesion[]
-
   @@map("juegos")
 }
 
 model JuegoSesion {
-  id            BigInt    @id @default(autoincrement())
-  usuarioId     BigInt    @map("usuario_id")
-  juegoId       BigInt    @map("juego_id")
-  iniciadaEn    DateTime  @default(now()) @map("iniciada_en") @db.Timestamptz(6)
-  finalizadaEn  DateTime? @map("finalizada_en") @db.Timestamptz(6)
+  // UUID generado por el cliente móvil para identificar la partida de forma
+  // única entre dispositivo y servidor (permite registrar partidas offline).
+  id          String   @id @db.Uuid
+  usuarioId   BigInt   @map("user_id")
+  durationMs  Int      @map("duration_ms")
+  errors      Int
+  correctTaps Int      @map("correct_taps")
+  // Momento en que el usuario terminó la partida (lo reporta el cliente).
+  completedAt DateTime @map("completed_at") @db.Timestamptz(6)
+  // Momento en que el backend registró la partida.
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  juego   Juego   @relation(fields: [juegoId], references: [id])
 
   @@map("juegos_sesiones")
 }

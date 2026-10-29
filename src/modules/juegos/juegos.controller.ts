@@ -1,15 +1,7 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Param,
-  ParseIntPipe,
-  Patch,
-  Post,
-} from '@nestjs/common';
+import { Body, Controller, Get, Post } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JuegosService } from './juegos.service';
-import { IniciarJuegoDto } from './dto/sesion-juego.dto';
+import { RegistrarSesionJuegoDto } from './dto/sesion-juego.dto';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 
@@ -27,27 +19,19 @@ export class JuegosController {
 
   @ApiBearerAuth()
   @Post('sesiones')
-  @ApiOperation({ summary: 'Iniciar una sesión de juego.' })
-  iniciarSesion(
+  @ApiOperation({
+    summary: 'Registrar una partida ya completada (duración, errores, aciertos).',
+  })
+  registrarSesion(
     @CurrentUser('usuarioId') usuarioId: bigint,
-    @Body() dto: IniciarJuegoDto,
+    @Body() dto: RegistrarSesionJuegoDto,
   ) {
-    return this.juegosService.iniciarSesion(usuarioId, dto);
-  }
-
-  @ApiBearerAuth()
-  @Patch('sesiones/:id/finalizar')
-  @ApiOperation({ summary: 'Marcar una sesión de juego como finalizada.' })
-  finalizarSesion(
-    @CurrentUser('usuarioId') usuarioId: bigint,
-    @Param('id', ParseIntPipe) id: number,
-  ) {
-    return this.juegosService.finalizarSesion(usuarioId, BigInt(id));
+    return this.juegosService.registrarSesion(usuarioId, dto);
   }
 
   @ApiBearerAuth()
   @Get('sesiones')
-  @ApiOperation({ summary: 'Historial de sesiones de juego del usuario.' })
+  @ApiOperation({ summary: 'Historial de partidas del usuario.' })
   listarSesiones(@CurrentUser('usuarioId') usuarioId: bigint) {
     return this.juegosService.listarSesiones(usuarioId);
   }

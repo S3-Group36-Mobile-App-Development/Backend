@@ -1,7 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ConsentimientoService } from '../../common/services/consentimiento.service';
-import { IniciarJuegoDto } from './dto/sesion-juego.dto';
+import { RegistrarSesionJuegoDto } from './dto/sesion-juego.dto';
 
 @Injectable()
 export class JuegosService {
@@ -16,42 +16,41 @@ export class JuegosService {
   }
 
   /**
-   * Inicia una sesión de juego. No se guarda puntaje ni resultado: solo
-   * importa que se jugó, para el tab Actividad.
+   * Registra una partida ya completada. El cliente genera el UUID y envía las
+   * métricas (duración, errores, aciertos) junto con el momento en que terminó.
+   * Es idempotente: si la partida ya se registró (mismo id), no se duplica.
    */
-  async iniciarSesion(usuarioId: bigint, dto: IniciarJuegoDto) {
+  async registrarSesion(usuarioId: bigint, dto: RegistrarSesionJuegoDto) {
     await this.consentimiento.asegurarConsentimiento(usuarioId);
 
-    const juego = await this.prisma.juego.findUnique({
-      where: { id: BigInt(dto.juegoId) },
+    const existente = await this.prisma.juegoSesion.findUnique({
+      where: { id: dto.id },
     });
-    if (!juego) {
-      throw new NotFoundException('Juego no encontrado.');
+    if (existente) {
+      // Si ya existe pero pertenece a otro usuario, es un conflicto de ID.
+      if (existente.usuarioId !== usuarioId) {
+        throw new ConflictException('Ya existe una partida con ese id.');
+      }
+      return existente;
     }
 
     return this.prisma.juegoSesion.create({
-      data: { usuarioId, juegoId: BigInt(dto.juegoId) },
+      data: {
+        id: dto.id,
+        usuarioId,
+        durationMs: dto.durationMs,
+        errors: dto.errors,
+        correctTaps: dto.correctTaps,
+        completedAt: new Date(dto.completedAt),
+      },
     });
   }
 
-  async finalizarSesion(usuarioId: bigint, sesionId: bigint) {
-    const sesion = await this.prisma.juegoSesion.findFirst({
-      where: { id: sesionId, usuarioId },
-    });
-    if (!sesion) {
-      throw new NotFoundException('Sesión de juego no encontrada.');
-    }
-    return this.prisma.juegoSesion.update({
-      where: { id: sesionId },
-      data: { finalizadaEn: new Date() },
-    });
-  }
-
+  /** Historial de partidas del usuario, más recientes primero. */
   listarSesiones(usuarioId: bigint) {
     return this.prisma.juegoSesion.findMany({
       where: { usuarioId },
-      orderBy: { iniciadaEn: 'desc' },
-      include: { juego: true },
+      orderBy: { completedAt: 'desc' },
     });
   }
 }
