@@ -1,10 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ConsentimientoService } from '../../common/services/consentimiento.service';
 import {
   IniciarSesionDto,
   CompletarSesionDto,
 } from './dto/sesion-respiracion.dto';
+import { ActualizarEjercicioDto } from './dto/actualizar-ejercicio.dto';
 
 @Injectable()
 export class RespiraService {
@@ -20,6 +22,32 @@ export class RespiraService {
 
   obtenerEjercicio(id: bigint) {
     return this.prisma.ejercicioRespiracion.findUnique({ where: { id } });
+  }
+
+  /**
+   * Actualiza los datos de un ejercicio del catálogo (edición parcial).
+   * Nota: hoy solo exige JWT. Para producción debería restringirse a un rol
+   * de administrador (el sistema aún no tiene roles de usuario).
+   */
+  async actualizarEjercicio(id: bigint, dto: ActualizarEjercicioDto) {
+    const existe = await this.prisma.ejercicioRespiracion.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!existe) {
+      throw new NotFoundException('Ejercicio de respiración no encontrado.');
+    }
+
+    return this.prisma.ejercicioRespiracion.update({
+      where: { id },
+      data: {
+        titulo: dto.titulo,
+        descripcion: dto.descripcion,
+        duracion: dto.duracion,
+        patron: dto.patron as Prisma.InputJsonValue | undefined,
+        vibra: dto.vibra,
+      },
+    });
   }
 
   /** Inicia una sesión de respiración (registra actividad). */

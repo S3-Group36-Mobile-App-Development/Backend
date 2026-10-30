@@ -6,6 +6,7 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Put,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { RespiraService } from './respira.service';
@@ -13,6 +14,7 @@ import {
   IniciarSesionDto,
   CompletarSesionDto,
 } from './dto/sesion-respiracion.dto';
+import { ActualizarEjercicioDto } from './dto/actualizar-ejercicio.dto';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 
@@ -33,6 +35,18 @@ export class RespiraController {
   @ApiOperation({ summary: 'Detalle de un ejercicio de respiración.' })
   obtenerEjercicio(@Param('id', ParseIntPipe) id: number) {
     return this.respiraService.obtenerEjercicio(BigInt(id));
+  }
+
+  @ApiBearerAuth()
+  @Put('ejercicios/:id')
+  @ApiOperation({
+    summary: 'Actualizar un ejercicio de respiración (edición parcial).',
+  })
+  actualizarEjercicio(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: ActualizarEjercicioDto,
+  ) {
+    return this.respiraService.actualizarEjercicio(BigInt(id), dto);
   }
 
   @ApiBearerAuth()
