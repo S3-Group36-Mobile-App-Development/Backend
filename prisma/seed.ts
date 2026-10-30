@@ -49,16 +49,31 @@ async function main() {
     {
       titulo: 'Respiración de caja',
       descripcion: 'Inhala, sostén, exhala y sostén en partes iguales.',
-      duracionSegundos: 120,
+      duracion: 120,
       patron: { inhalar: 4, sostener: 4, exhalar: 4, sostener2: 4, ciclos: 6 },
       vibra: true,
     },
     {
       titulo: 'Respiración 4-7-8',
       descripcion: 'Ideal para calmar la ansiedad antes de dormir.',
-      duracionSegundos: 114,
+      duracion: 114,
       patron: { inhalar: 4, sostener: 7, exhalar: 8, ciclos: 6 },
       vibra: true,
+    },
+    {
+      titulo: 'Respiración profunda abdominal',
+      descripcion: 'Respiración lenta con el diafragma para relajarte.',
+      duracion: 120,
+      patron: { inhalar: 5, exhalar: 5, ciclos: 12 },
+      vibra: true,
+    },
+    {
+      titulo: 'Respiración de coherencia',
+      descripcion:
+        'Seis respiraciones por minuto para equilibrar el ritmo cardíaco.',
+      duracion: 180,
+      patron: { inhalar: 5, exhalar: 5, ciclos: 18 },
+      vibra: false,
     },
   ];
   for (const ej of ejercicios) {

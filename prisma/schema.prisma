@@ -190,12 +190,20 @@ model EventoPanico {
 // ---------------------------------------------------------------------------
 
 model EjercicioRespiracion {
-  id               BigInt  @id @default(autoincrement())
-  titulo           String
-  descripcion      String?
-  duracionSegundos Int     @map("duracion_segundos")
-  patron           Json    @db.JsonB
-  vibra            Boolean @default(true)
+  id          BigInt  @id @default(autoincrement())
+  titulo      String
+  descripcion String?
+  duracion    Int     @map("duracion_segundos")
+  patron      Json    @db.JsonB
+  vibra       Boolean @default(true)
+
+  // Métricas agregadas (se actualizan al completar una sesión).
+  // Número de veces que el ejercicio fue completado.
+  usageCount  Int     @default(0) @map("usage_count")
+  // Calificación promedio (0 si aún no tiene calificaciones).
+  ratingAvg   Decimal @default(0) @map("rating_avg") @db.Decimal(3, 2)
+  // Cantidad de calificaciones recibidas (para recalcular el promedio).
+  ratingCount Int     @default(0) @map("rating_count")
 
   sesiones RespiracionSesion[]
 

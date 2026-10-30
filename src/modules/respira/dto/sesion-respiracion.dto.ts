@@ -43,4 +43,17 @@ export class CompletarSesionDto {
   @IsInt()
   @Min(0)
   numberMovementPauses?: number;
+
+  @ApiPropertyOptional({
+    description:
+      'Calificación del ejercicio del 1 al 5. Si se envía, actualiza el promedio del ejercicio.',
+    example: 5,
+    minimum: 1,
+    maximum: 5,
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(5)
+  rating?: number;
 }

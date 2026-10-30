@@ -42,7 +42,12 @@ export class RespiraService {
     });
   }
 
-  /** Marca una sesión como completada y guarda mood final + pausas. */
+  /**
+   * Marca una sesión como completada y guarda mood final + pausas.
+   * Además actualiza las métricas agregadas del ejercicio: incrementa el
+   * contador de uso y, si el usuario envió una calificación, recalcula el
+   * promedio. Todo en una transacción para mantener la consistencia.
+   */
   async completarSesion(
     usuarioId: bigint,
     sesionId: bigint,
@@ -55,13 +60,46 @@ export class RespiraService {
       throw new NotFoundException('Sesión de respiración no encontrada.');
     }
 
-    return this.prisma.respiracionSesion.update({
-      where: { id: sesionId },
-      data: {
-        completadaEn: new Date(),
-        finalEmotion: dto.finalEmotion,
-        numberMovementPauses: dto.numberMovementPauses,
-      },
+    return this.prisma.$transaction(async (tx) => {
+      const sesionActualizada = await tx.respiracionSesion.update({
+        where: { id: sesionId },
+        data: {
+          completadaEn: new Date(),
+          finalEmotion: dto.finalEmotion,
+          numberMovementPauses: dto.numberMovementPauses,
+        },
+      });
+
+      if (dto.rating !== undefined) {
+        // Recalcula el promedio incremental:
+        //   nuevoAvg = (avg * count + rating) / (count + 1)
+        const ejercicio = await tx.ejercicioRespiracion.findUnique({
+          where: { id: sesion.ejercicioId },
+          select: { ratingAvg: true, ratingCount: true },
+        });
+        const count = ejercicio?.ratingCount ?? 0;
+        const avg = ejercicio ? Number(ejercicio.ratingAvg) : 0;
+        const nuevoCount = count + 1;
+        const nuevoAvg = (avg * count + dto.rating) / nuevoCount;
+
+        await tx.ejercicioRespiracion.update({
+          where: { id: sesion.ejercicioId },
+          data: {
+            usageCount: { increment: 1 },
+            ratingCount: nuevoCount,
+            // Decimal(3,2): redondeo a 2 decimales.
+            ratingAvg: Math.round(nuevoAvg * 100) / 100,
+          },
+        });
+      } else {
+        // Sin calificación: solo cuenta el uso.
+        await tx.ejercicioRespiracion.update({
+          where: { id: sesion.ejercicioId },
+          data: { usageCount: { increment: 1 } },
+        });
+      }
+
+      return sesionActualizada;
     });
   }
 
