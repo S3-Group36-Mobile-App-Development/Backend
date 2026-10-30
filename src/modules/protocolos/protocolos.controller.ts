@@ -6,10 +6,12 @@ import {
   Param,
   ParseIntPipe,
   Post,
+  Put,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ProtocolosService } from './protocolos.service';
 import { CrearProtocoloDto } from './dto/crear-protocolo.dto';
+import { ActualizarProtocoloDto } from './dto/actualizar-protocolo.dto';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
 @ApiTags('Protocolos')
@@ -40,6 +42,16 @@ export class ProtocolosController {
     @Body() dto: CrearProtocoloDto,
   ) {
     return this.protocolosService.crearProtocolo(usuarioId, dto);
+  }
+
+  @Put(':id')
+  @ApiOperation({ summary: 'Editar un protocolo propio (título y pasos).' })
+  actualizar(
+    @CurrentUser('usuarioId') usuarioId: bigint,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: ActualizarProtocoloDto,
+  ) {
+    return this.protocolosService.actualizarProtocolo(usuarioId, BigInt(id), dto);
   }
 
   @Delete(':id')

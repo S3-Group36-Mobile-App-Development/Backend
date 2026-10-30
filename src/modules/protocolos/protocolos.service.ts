@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CrearProtocoloDto } from './dto/crear-protocolo.dto';
+import { ActualizarProtocoloDto } from './dto/actualizar-protocolo.dto';
 
 @Injectable()
 export class ProtocolosService {
@@ -53,6 +54,48 @@ export class ProtocolosService {
         },
       },
       include: { pasos: { orderBy: { ordenPaso: 'asc' } } },
+    });
+  }
+
+  /**
+   * Reemplaza el título y los pasos de un protocolo propio del usuario.
+   * No permite editar protocolos predefinidos ni de otros usuarios.
+   * Los pasos se reemplazan por completo dentro de una transacción.
+   */
+  async actualizarProtocolo(
+    usuarioId: bigint,
+    protocoloId: bigint,
+    dto: ActualizarProtocoloDto,
+  ) {
+    const protocolo = await this.prisma.protocolo.findUnique({
+      where: { id: protocoloId },
+      select: { usuarioId: true, esPredefinido: true },
+    });
+    if (!protocolo) {
+      throw new NotFoundException('Protocolo no encontrado.');
+    }
+    if (protocolo.esPredefinido || protocolo.usuarioId !== usuarioId) {
+      throw new ForbiddenException(
+        'Solo puedes editar tus propios protocolos.',
+      );
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      // Borra los pasos actuales y crea los nuevos.
+      await tx.pasoProtocolo.deleteMany({ where: { protocoloId } });
+      return tx.protocolo.update({
+        where: { id: protocoloId },
+        data: {
+          titulo: dto.titulo,
+          pasos: {
+            create: dto.pasos.map((p) => ({
+              ordenPaso: p.ordenPaso,
+              descripcion: p.descripcion,
+            })),
+          },
+        },
+        include: { pasos: { orderBy: { ordenPaso: 'asc' } } },
+      });
     });
   }
 
