@@ -2,9 +2,11 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsBoolean,
   IsInt,
+  IsNumber,
   IsObject,
   IsOptional,
   IsString,
+  Max,
   Min,
   MinLength,
 } from 'class-validator';
@@ -43,4 +45,36 @@ export class ActualizarEjercicioDto {
   @IsOptional()
   @IsBoolean()
   vibra?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Número de veces que se ha usado el ejercicio.',
+    example: 10,
+    minimum: 0,
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  usageCount?: number;
+
+  @ApiPropertyOptional({
+    description: 'Calificación promedio (0 a 5, hasta 2 decimales).',
+    example: 4.5,
+    minimum: 0,
+    maximum: 5,
+  })
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  @Max(5)
+  ratingAvg?: number;
+
+  @ApiPropertyOptional({
+    description: 'Cantidad de calificaciones recibidas.',
+    example: 20,
+    minimum: 0,
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  ratingCount?: number;
 }
